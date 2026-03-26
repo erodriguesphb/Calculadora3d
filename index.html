@@ -386,43 +386,29 @@
     </div>
     <div class="field">
       <span class="field-label">Custo energia</span>
-      <input type="number" id="kwh" value="0.90" min="0" step="0.01" oninput="calc()">
-      <span class="field-unit">R$/kWh</span>
+      <span style="font-size:15px;font-weight:500;color:var(--muted);">R$ 0,95/kWh</span>
     </div>
   </div>
 
-  <!-- MÃO DE OBRA -->
+  <!-- DESGASTE -->
   <div class="section">
-    <div class="section-header">Mão de obra & desgaste</div>
-    <div class="field">
-      <span class="field-label">Tempo de trabalho</span>
-      <input type="number" id="labor_h" value="0.5" min="0" step="0.25" oninput="calc()">
-      <span class="field-unit">h</span>
-    </div>
-    <div class="field">
-      <span class="field-label">Valor da hora</span>
-      <input type="number" id="labor_rate" value="30" min="0" step="5" oninput="calc()">
-      <span class="field-unit">R$</span>
-    </div>
+    <div class="section-header">Desgaste</div>
     <div class="field">
       <span class="field-label">Desgaste da impressora</span>
-      <input type="number" id="wear" value="2" min="0" step="0.5" oninput="calc()">
-      <span class="field-unit">R$</span>
+      <span style="font-size:15px;font-weight:500;color:var(--muted);">R$ 3,00</span>
     </div>
   </div>
 
   <!-- MARGENS -->
   <div class="section">
-    <div class="section-header">Margens</div>
+    <div class="section-header">Margens (fixas)</div>
     <div class="field">
       <span class="field-label">Taxa de falha/reimpressão</span>
-      <input type="number" id="fail" value="10" min="0" max="100" step="5" oninput="calc()">
-      <span class="field-unit">%</span>
+      <span style="font-size:15px;font-weight:500;color:var(--muted);">10%</span>
     </div>
     <div class="field">
       <span class="field-label">Margem de lucro</span>
-      <input type="number" id="margin" value="30" min="0" max="500" step="5" oninput="calc()">
-      <span class="field-unit">%</span>
+      <span style="font-size:15px;font-weight:500;color:var(--muted);">50%</span>
     </div>
   </div>
 
@@ -446,7 +432,6 @@
   <div class="breakdown">
     <div class="breakdown-row"><span class="lbl">Filamento</span><span class="val" id="b_fil">—</span></div>
     <div class="breakdown-row"><span class="lbl">Energia</span><span class="val" id="b_nrg">—</span></div>
-    <div class="breakdown-row"><span class="lbl">Mão de obra</span><span class="val" id="b_lbr">—</span></div>
     <div class="breakdown-row"><span class="lbl">Desgaste</span><span class="val" id="b_wer">—</span></div>
     <div class="breakdown-row"><span class="lbl">Ajuste de falhas</span><span class="val" id="b_fal">—</span></div>
     <div class="breakdown-row total"><span class="lbl">Custo real</span><span class="val" id="b_cst">—</span></div>
@@ -482,25 +467,26 @@
   }
 
   function calc() {
+    const KWH = 0.95;
+    const WEAR = 3.00;
+    const FAIL = 0.10;
+    const MARGIN = 0.50;
     const filament = (v('price_kg') / 1000) * v('weight_g');
-    const energy   = (watts / 1000) * v('print_h') * v('kwh');
-    const labor    = v('labor_h') * v('labor_rate');
-    const wear     = v('wear');
-    const base     = filament + energy + labor + wear;
-    const fail_add = base * (v('fail') / 100);
+    const energy   = (watts / 1000) * v('print_h') * KWH;
+    const base     = filament + energy + WEAR;
+    const fail_add = base * FAIL;
     const real     = base + fail_add;
-    const profit   = real * (v('margin') / 100);
+    const profit   = real * MARGIN;
     const final    = real + profit;
 
-    document.getElementById('final').textContent   = brl(final);
-    document.getElementById('r_base').textContent  = brl(real);
+    document.getElementById('final').textContent    = brl(final);
+    document.getElementById('r_base').textContent   = brl(real);
     document.getElementById('r_profit').textContent = brl(profit);
-    document.getElementById('b_fil').textContent   = brl(filament);
-    document.getElementById('b_nrg').textContent   = brl(energy);
-    document.getElementById('b_lbr').textContent   = brl(labor);
-    document.getElementById('b_wer').textContent   = brl(wear);
-    document.getElementById('b_fal').textContent   = '+' + brl(fail_add);
-    document.getElementById('b_cst').textContent   = brl(real);
+    document.getElementById('b_fil').textContent    = brl(filament);
+    document.getElementById('b_nrg').textContent    = brl(energy);
+    document.getElementById('b_wer').textContent    = brl(WEAR);
+    document.getElementById('b_fal').textContent    = '+' + brl(fail_add);
+    document.getElementById('b_cst').textContent    = brl(real);
   }
 
   function copyResult() {
@@ -510,7 +496,6 @@
     const profit= document.getElementById('r_profit').textContent;
     const fil   = document.getElementById('b_fil').textContent;
     const nrg   = document.getElementById('b_nrg').textContent;
-    const lbr   = document.getElementById('b_lbr').textContent;
     const wer   = document.getElementById('b_wer').textContent;
     const fal   = document.getElementById('b_fal').textContent;
 
@@ -520,7 +505,6 @@ Impressora: ${printer}
 
 📦 Filamento: ${fil}
 ⚡ Energia: ${nrg}
-🔧 Mão de obra: ${lbr}
 ⚙️ Desgaste: ${wer}
 ⚠️ Falhas: ${fal}
 
