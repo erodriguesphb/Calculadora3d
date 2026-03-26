@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Preço 3D">
+<title>Calculadora 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5a0;
+    --accent2: #7b61ff;
+    --text: #f0f0f5;
+    --muted: #6b6b82;
+    --danger: #ff6b6b;
+    --input-bg: #1a1a24;
+    --radius: 16px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  body {
+    padding: env(safe-area-inset-top, 20px) 0 env(safe-area-inset-bottom, 20px);
+    overflow-x: hidden;
+  }
+
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 0 16px 100px;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 24px 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--text); }
+
+  .badge {
+    font-size: 10px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    letter-spacing: 0.05em;
+  }
+
+  /* PRINTER SELECTOR */
+  .printer-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .printer-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    -webkit-appearance: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .printer-btn.active {
+    border-color: var(--accent);
+    background: rgba(0,229,160,0.06);
+  }
+
+  .printer-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+    transform-origin: left;
+  }
+
+  .printer-btn.active::before { transform: scaleX(1); }
+
+  .printer-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .printer-watts {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .printer-btn.active .printer-watts { color: var(--accent); }
+
+  /* SECTIONS */
+  .section {
+    margin-bottom: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 10px 16px;
+    background: var(--surface2);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    min-height: 56px;
+  }
+
+  .field:last-child { border-bottom: none; }
+
+  .field-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .field-unit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .field input[type="number"] {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    width: 88px;
+    padding: 8px 10px;
+    text-align: right;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s;
+  }
+
+  .field input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  /* RESULT */
+  .result-card {
+    background: linear-gradient(135deg, #0d2b1f 0%, #0a0a1a 100%);
+    border: 1.5px solid var(--accent);
+    border-radius: 20px;
+    padding: 24px 20px 20px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .result-label {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .result-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .result-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .result-item-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .result-item-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* BREAKDOWN */
+  .breakdown {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-row .lbl { color: var(--muted); }
+  .breakdown-row .val { color: var(--text); font-weight: 500; }
+  .breakdown-row.total .lbl { color: var(--text); font-weight: 500; }
+  .breakdown-row.total .val { color: var(--accent2); font-weight: 500; }
+
+  /* COPY BTN */
+  .copy-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    margin-bottom: 14px;
+  }
+
+  .copy-btn:active {
+    background: rgba(0,229,160,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(0.98);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: 30px;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* HINT */
+  .hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 8px 0 4px;
+    line-height: 1.6;
+  }
+
+  .hint strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">PREÇO<span>3D</span></div>
+    <div class="badge">CALCULADORA</div>
+  </div>
+
+  <!-- PRINTER -->
+  <div class="printer-row">
+    <button class="printer-btn active" onclick="selectPrinter(this, 350)" data-watts="350">
+      <span class="printer-name">K1C</span>
+      <span class="printer-watts">350 W</span>
+    </button>
+    <button class="printer-btn" onclick="selectPrinter(this, 150)" data-watts="150">
+      <span class="printer-name">A1 Mini</span>
+      <span class="printer-watts">150 W</span>
+    </button>
+  </div>
+
+  <!-- FILAMENTO -->
+  <div class="section">
+    <div class="section-header">Filamento</div>
+    <div class="field">
+      <span class="field-label">Preço do rolo</span>
+      <input type="number" id="price_kg" value="80" min="0" step="1" oninput="calc()">
+      <span class="field-unit">R$/kg</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Peso da peça</span>
+      <input type="number" id="weight_g" value="50" min="0" step="1" oninput="calc()">
+      <span class="field-unit">g</span>
+    </div>
+  </div>
+
+  <!-- ENERGIA -->
+  <div class="section">
+    <div class="section-header">Energia</div>
+    <div class="field">
+      <span class="field-label">Tempo de impressão</span>
+      <input type="number" id="print_h" value="3" min="0" step="0.5" oninput="calc()">
+      <span class="field-unit">h</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Custo energia</span>
+      <input type="number" id="kwh" value="0.90" min="0" step="0.01" oninput="calc()">
+      <span class="field-unit">R$/kWh</span>
+    </div>
+  </div>
+
+  <!-- MÃO DE OBRA -->
+  <div class="section">
+    <div class="section-header">Mão de obra & desgaste</div>
+    <div class="field">
+      <span class="field-label">Tempo de trabalho</span>
+      <input type="number" id="labor_h" value="0.5" min="0" step="0.25" oninput="calc()">
+      <span class="field-unit">h</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Valor da hora</span>
+      <input type="number" id="labor_rate" value="30" min="0" step="5" oninput="calc()">
+      <span class="field-unit">R$</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Desgaste da impressora</span>
+      <input type="number" id="wear" value="2" min="0" step="0.5" oninput="calc()">
+      <span class="field-unit">R$</span>
+    </div>
+  </div>
+
+  <!-- MARGENS -->
+  <div class="section">
+    <div class="section-header">Margens</div>
+    <div class="field">
+      <span class="field-label">Taxa de falha/reimpressão</span>
+      <input type="number" id="fail" value="10" min="0" max="100" step="5" oninput="calc()">
+      <span class="field-unit">%</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Margem de lucro</span>
+      <input type="number" id="margin" value="30" min="0" max="500" step="5" oninput="calc()">
+      <span class="field-unit">%</span>
+    </div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="result-card">
+    <div class="result-label">Preço sugerido de venda</div>
+    <div class="result-price" id="final">R$ 0,00</div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-item-label">Custo base</div>
+        <div class="result-item-value" id="r_base">R$ 0,00</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Seu lucro</div>
+        <div class="result-item-value" id="r_profit">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN -->
+  <div class="breakdown">
+    <div class="breakdown-row"><span class="lbl">Filamento</span><span class="val" id="b_fil">—</span></div>
+    <div class="breakdown-row"><span class="lbl">Energia</span><span class="val" id="b_nrg">—</span></div>
+    <div class="breakdown-row"><span class="lbl">Mão de obra</span><span class="val" id="b_lbr">—</span></div>
+    <div class="breakdown-row"><span class="lbl">Desgaste</span><span class="val" id="b_wer">—</span></div>
+    <div class="breakdown-row"><span class="lbl">Ajuste de falhas</span><span class="val" id="b_fal">—</span></div>
+    <div class="breakdown-row total"><span class="lbl">Custo real</span><span class="val" id="b_cst">—</span></div>
+  </div>
+
+  <button class="copy-btn" onclick="copyResult()">⎘ Copiar resultado para WhatsApp / Notas</button>
+
+  <div class="hint">
+    Para salvar na tela inicial:<br>
+    <strong>Safari → Compartilhar → Adicionar à Tela de Início</strong>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">✓ Copiado!</div>
+
+<script>
+  let watts = 350;
+
+  function selectPrinter(btn, w) {
+    document.querySelectorAll('.printer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    watts = w;
+    calc();
+  }
+
+  function brl(n) {
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  function v(id) {
+    return parseFloat(document.getElementById(id).value) || 0;
+  }
+
+  function calc() {
+    const filament = (v('price_kg') / 1000) * v('weight_g');
+    const energy   = (watts / 1000) * v('print_h') * v('kwh');
+    const labor    = v('labor_h') * v('labor_rate');
+    const wear     = v('wear');
+    const base     = filament + energy + labor + wear;
+    const fail_add = base * (v('fail') / 100);
+    const real     = base + fail_add;
+    const profit   = real * (v('margin') / 100);
+    const final    = real + profit;
+
+    document.getElementById('final').textContent   = brl(final);
+    document.getElementById('r_base').textContent  = brl(real);
+    document.getElementById('r_profit').textContent = brl(profit);
+    document.getElementById('b_fil').textContent   = brl(filament);
+    document.getElementById('b_nrg').textContent   = brl(energy);
+    document.getElementById('b_lbr').textContent   = brl(labor);
+    document.getElementById('b_wer').textContent   = brl(wear);
+    document.getElementById('b_fal').textContent   = '+' + brl(fail_add);
+    document.getElementById('b_cst').textContent   = brl(real);
+  }
+
+  function copyResult() {
+    const printer = watts === 350 ? 'K1C (350W)' : 'A1 Mini (150W)';
+    const final = document.getElementById('final').textContent;
+    const base  = document.getElementById('r_base').textContent;
+    const profit= document.getElementById('r_profit').textContent;
+    const fil   = document.getElementById('b_fil').textContent;
+    const nrg   = document.getElementById('b_nrg').textContent;
+    const lbr   = document.getElementById('b_lbr').textContent;
+    const wer   = document.getElementById('b_wer').textContent;
+    const fal   = document.getElementById('b_fal').textContent;
+
+    const txt =
+`🖨️ ORÇAMENTO - IMPRESSÃO 3D
+Impressora: ${printer}
+
+📦 Filamento: ${fil}
+⚡ Energia: ${nrg}
+🔧 Mão de obra: ${lbr}
+⚙️ Desgaste: ${wer}
+⚠️ Falhas: ${fal}
+
+💰 Custo real: ${base}
+📈 Lucro: ${profit}
+
+✅ PREÇO FINAL: ${final}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(showToast);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast();
+    }
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  calc();
+</script>
+</body>
+</html>
